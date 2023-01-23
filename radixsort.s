@@ -104,10 +104,18 @@ read_loop_cond:
     # find_exp. Again, make sure to use proper calling 
     # conventions!
 
+    move    $a0, $s0            # a0 is the pointer to the first element of the array
+    move    $a1, $s1            # a1 is number of elements in the array
+    jal     find_exp
+    
 
     # Pass the three arguments in $a0, $a1, and $a2 before
     # calling radsort (radixsort)
 
+    move    $a2, $t3            # a2 is return value of find_exp
+    move    $a0, $s0            # a0 is the pointer to the first element of the array
+    move    $a1, $s1            # a1 is number of elements in the array
+    jal     radsort
 
     #---- Print sorted array -----------------------------------
     li      $v0, 4              # print_string
@@ -148,10 +156,73 @@ print_loop_cond:
 radsort: 
     # You will have to use a syscall to allocate
     # temporary storage (mallocs in the C implementation)
+
+    sltu    $t2, $a2, 2
+    bne     $t2, $0, return
+
     jr      $ra
 
-find_exp:
-    jr      $ra               
+find_exp:                       # unsigned find_exp(unsigned *array, unsigned n)
+    #----------------------------------------------------------
+    # $a0 - pointer to the dst array
+    # $a2 - number of elements in the array
+    #----------------------------------------------------------
+    move    $t0, $a0            # start of array
+    sll     $t2, $a2, 2         # number of bytes in array
+    addu    $t1, $t0, $t2       # end of array
 
-arrcpy:
-    jr      $ra
+    lw      $t3, 0($t0)         # unsigned largest = array[0];
+    j       find_max_loop_cond
+
+    sltu    $t6, $t3, 10         # largest < 10
+    bne     $t6, $0, return      # jump if largest < 10, do not execute while loop
+    li      $t6, 10              # RADIX = 10
+    li      $t7, 1               # exp = 1
+    j       get_exp_loop
+    jr      $ra                  # return
+
+get_exp_loop:
+    div     $t3, $t6
+    mflo    $t3                  # quotient to $t3
+
+    mult    $t7, $t6
+    mflo    $t7                  # 32 least significant bits of multiplication to $t7
+
+    sltu    $t8, $t3, 10         # largest < 10
+    beq     $t8, $0, get_exp_loop # jump if not largest < 10, continue while loop
+
+find_max_loop:
+    lw      $t4, 0($t0)         # array[i]
+    sltu    $t5, $t3, $t4       # largest < array[i]
+    beq     $t5, $0, find_max_loop_cond # jump if not largest < array[i]
+    addiu   $t0, $t0, 4         # increment array pointer
+
+    move    $t3, $t4            # largest = array[i];
+
+find_max_loop_cond:
+    bne     $t1, $t0, find_max_loop
+
+return:
+    jr      $ra                 # return
+
+arrcpy:                         # void copy_array(unsigned *dst, unsigned *src, unsigned n)
+    #----------------------------------------------------------
+    # $a0 - pointer to the dst array
+    # $a1 - pointer to the src array
+    # $a2 - number of elements in the array
+    #----------------------------------------------------------
+    move    $t0, $a0            # start of dst array
+    sll     $t2, $a2, 2         # number of bytes in array
+    addu    $t1, $a0, $t2       # end of array
+    move    $t3, $a1            # start of src array
+    j       copy_loop_cond
+
+copy_loop:
+    lw      $t2, 0($t3)         # load src word
+    sw      $t2, 0($t0)         # save loaded src word to dst array
+    addiu   $t0, $t0, 4         # increment dst pointer
+    addiu   $t3, $t3, 4         # increment src pointer
+
+copy_loop_cond:
+    bne     $t0, $t1, copy_loop
+    jr      $ra                 # return
