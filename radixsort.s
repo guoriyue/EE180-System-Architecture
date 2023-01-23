@@ -47,6 +47,8 @@ EOL:        .asciiz "\n"
 
 .text
 .globl main
+.globl find_exp
+.globl radsort
 
 #==========================================================================
 main:
@@ -105,7 +107,7 @@ read_loop_cond:
     # conventions!
 
     move    $a0, $s0            # a0 is the pointer to the first element of the array
-    move    $a1, $s1            # a1 is number of elements in the array
+    move    $a2, $s1            # a1 is number of elements in the array
     jal     find_exp
     
 
@@ -154,56 +156,126 @@ print_loop_cond:
 # ADD YOUR CODE HERE! 
 
 radsort: 
+    # a2 is return value of find_exp
+    # a0 is the pointer to the first element of the array
+    # a1 is number of elements in the array
+    
     # You will have to use a syscall to allocate
     # temporary storage (mallocs in the C implementation)
 
-    sltu    $t2, $a2, 2
-    bne     $t2, $0, return
+    addiu	$sp, $sp, -32		# allocate memory for new frame
+    sw      $a0, 24($sp)
 
-    jr      $ra
+    sltu    $t2, $a1, 2         # if (n < 2)
+    bne     $t2, $0, radsort_return     # return 
+    bne     $a2, $0, radsort_return     # return if exp == 0
 
-find_exp:                       # unsigned find_exp(unsigned *array, unsigned n)
-    #----------------------------------------------------------
-    # $a0 - pointer to the dst array
-    # $a2 - number of elements in the array
-    #----------------------------------------------------------
-    move    $t0, $a0            # start of array
-    sll     $t2, $a2, 2         # number of bytes in array
-    addu    $t1, $t0, $t2       # end of array
+    move    $t0, $a0            # the start of array
 
-    lw      $t3, 0($t0)         # unsigned largest = array[0];
-    j       find_max_loop_cond
+    li      $v0, 9              # sbrk
+    li      $a0, 40             # 4 * RADIX
+    mult    $a0, $a1            # map the 2d array to 1d, size should be 4 * RADIX * n
+    mflo    $a0                 # 32 least significant bits of multiplication to $a0
+    syscall
+    move    $s4, $v0            # the addr of allocated memory for *children
 
-    sltu    $t6, $t3, 10         # largest < 10
-    bne     $t6, $0, return      # jump if largest < 10, do not execute while loop
-    li      $t6, 10              # RADIX = 10
-    li      $t7, 1               # exp = 1
-    j       get_exp_loop
-    jr      $ra                  # return
+    li      $v0, 9              # sbrk
+    li      $a0, 40             # 4 * RADIX
+    syscall
+    move    $t1, $v0            # the addr of allocated memory for children_len
+    sw		$t1, 28($sp)		# store children_len start in stack
+    addu    $t2, $t1, 40        # end of children_len array
 
-get_exp_loop:
-    div     $t3, $t6
-    mflo    $t3                  # quotient to $t3
+    j initialization_loop_cond  # after initialization, t1 is changed
 
-    mult    $t7, $t6
-    mflo    $t7                  # 32 least significant bits of multiplication to $t7
 
-    sltu    $t8, $t3, 10         # largest < 10
-    beq     $t8, $0, get_exp_loop # jump if not largest < 10, continue while loop
 
-find_max_loop:
-    lw      $t4, 0($t0)         # array[i]
-    sltu    $t5, $t3, $t4       # largest < array[i]
-    beq     $t5, $0, find_max_loop_cond # jump if not largest < array[i]
-    addiu   $t0, $t0, 4         # increment array pointer
+initialization_loop:
+    lw      $t4, 0($t1)         # load word
+    li      $t4, 0
+    sw      $t4, 0($t1)         # save 0 to array
+    addiu   $t1, $t1, 4         # increment pointer
 
-    move    $t3, $t4            # largest = array[i];
+initialization_loop_cond:
+    bne     $t2, $t1, initialization_loop
+    
+    
+    lw      $t1, 28($sp)		# load in children_len start in stack
 
-find_max_loop_cond:
-    bne     $t1, $t0, find_max_loop
+    li      $t6, 10             # RADIX = 10
+    sll     $t4, $a1, 2         # number of bytes in array
+    addu    $t4, $t0, $t4       # end of array
+    
+    j assign_buckets_loop_cond 
 
-return:
-    jr      $ra                 # return
+
+
+assign_buckets_loop:
+    lw      $t7, 0($t0)         # array[i]
+    div     $t7, $a2            # array[i] / exp
+    mflo    $t3                 # array[i] / exp, get quotient
+
+    div     $t3, $t6            # / RADIX
+    mfhi    $t3                 # remainder, (array[i] / exp) % RADIX, get sort_index in $t3
+
+
+    sll     $t3, $t3, 2         # get byte address of sort_index
+    addu    $s2, $t1, $t3       # add together to get the address of children_len[sort_index]
+    
+
+    lw      $s0, 0($s2)         # children_len[sort_index]   
+    sll     $s5, $s0, 2         # children_len[sort_index] to byte address
+
+    li      $t9, 40             # 4 * RADIX
+    mult    $s4, $t9            # map the 2d array to 1d, size should be 4 * RADIX * sort_index
+    mflo    $s4                 # 32 least significant bits of multiplication to $s4
+
+    addu    $s3, $s4, $t3       # add together to get the address of children[sort_index]
+
+
+# since we already assigned enough space for children, no need to malloc again
+assign_to_buckets:
+    lw      $s6, 0($s3)         # get children[sort_index]
+    addu    $s6, $s6, $s5       # add byte address together, get children[sort_index][children_len[sort_index]]
+
+    sw      $t7, 0($s6)         # assign children[sort_index][children_len[sort_index]] = array[i]
+
+    addiu   $s1, $s0, 1         # children_len[sort_index]++, but save the value in $s1
+    addiu   $t0, $t0, 4         # array start increment
+    sw      $s1, 0($s2)         # assign to children_len[sort_index]++
+
+assign_buckets_loop_cond:
+    bne     $t0, $t4, initialization_loop
+    lw      $t1, 28($sp)		# load in children_len start in stack
+    j recursive_sort_loop_cond
+
+
+
+recursive_sort_loop:
+    li      $t7, 0              # int idx = 0;
+    lw      $s0, 0($t1)         # children_len[i]
+
+    bne     $s0, $0, recursive_sort_loop
+
+    sw      $a0, 16($sp)        # protect values of arrcpy
+    sw      $a1, 12($sp)
+    sw      $a2, 8($sp)
+    move    $a2, $s0            # assign children_len[i] to n copy_array(array+idx, children[i], children_len[i]);
+    addu    $a0, $t0, $t7       # array+idx
+
+    
+    
+    lw      $t9, 28($sp)		# load in children_len start in stack
+    sub     $s7, $s0, $t9       # children_len[i] - children_len[0] to $s7
+
+    li      $t9, 40             # 4 * RADIX
+    mult    $s7, $t9            # map the 2d array to 1d, size should be 4 * RADIX * sort_index
+    mflo    $s7                 # 32 least significant bits of multiplication to $s7
+    addu    $s7, $s7, $t3       # add together to get the address of children[sort_index]
+    move    $a1, $s7
+    addu    $t7, $t7, $s0       # idx += children_len[i]
+    j arrcpy
+
 
 arrcpy:                         # void copy_array(unsigned *dst, unsigned *src, unsigned n)
     #----------------------------------------------------------
@@ -217,6 +289,8 @@ arrcpy:                         # void copy_array(unsigned *dst, unsigned *src, 
     move    $t3, $a1            # start of src array
     j       copy_loop_cond
 
+
+
 copy_loop:
     lw      $t2, 0($t3)         # load src word
     sw      $t2, 0($t0)         # save loaded src word to dst array
@@ -225,4 +299,76 @@ copy_loop:
 
 copy_loop_cond:
     bne     $t0, $t1, copy_loop
+
+    lw      $a0, 16($sp)        # recover values after arrcpy
+    lw      $a1, 12($sp)
+    lw      $a2, 8($sp)
+    addiu   $t1, $t1, 4         # for loop increment
+    
+
+
+recursive_sort_loop_cond:
+    bne     $t1, $t2, recursive_sort_loop
+    # Free allocated memory, we don't need a loop here because we use an 1D array to represent children_len
+
+
+
+radsort_return:
     jr      $ra                 # return
+
+
+
+
+
+
+
+find_exp:                       # unsigned find_exp(unsigned *array, unsigned n)
+    #----------------------------------------------------------
+    # $a0 - pointer to the dst array
+    # $a2 - number of elements in the array
+    #----------------------------------------------------------
+    move    $t0, $a0            # start of array
+    sll     $t2, $a2, 2         # number of bytes in array
+    addu    $t1, $t0, $t2       # end of array
+
+    lw      $t3, 0($t0)         # unsigned largest = array[0];
+    j       find_max_loop_cond
+
+find_max_loop:
+    lw      $t4, 0($t0)         # array[i]
+    sltu    $t5, $t3, $t4       # largest < array[i]
+    beq     $t5, $0, find_max_loop_cond # jump if not largest < array[i]
+    addiu   $t0, $t0, 4         # increment array pointer
+
+    move    $t3, $t4            # largest = array[i];
+
+find_max_loop_cond:
+    bne     $t1, $t0, find_max_loop
+
+    sltu    $t6, $t3, 10         # largest < 10
+    bne     $t6, $0, find_exp_return      # jump if largest < 10, do not execute while loop
+    li      $t6, 10              # RADIX = 10
+    li      $t7, 1               # exp = 1
+    j       find_exp_radix_loop
+
+find_exp_radix_loop:
+    div     $t3, $t6
+    mflo    $t3                  # quotient to $t3
+
+    mult    $t7, $t6
+    mflo    $t7                  # 32 least significant bits of multiplication to $t7
+
+    sltu    $t8, $t3, 10         # largest < 10
+    beq     $t8, $0, find_exp_radix_loop # jump if not largest < 10, continue while loop
+
+find_exp_return:
+    jr      $ra                 # return
+
+
+
+
+
+
+
+
+
