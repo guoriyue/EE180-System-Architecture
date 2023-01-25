@@ -1,4 +1,5 @@
 # ee180-architecturelastname, firstname
-yoursunetid@stanford.edu
-lastname, firstname
-yoursunetid@stanford.edu
+yyang29@stanford.edu
+Yang, Ethan
+mfguo@stanford.edu
+Guo, Mingfei
