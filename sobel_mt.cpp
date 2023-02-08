@@ -113,8 +113,10 @@ void *runSobelMT(void *ptr)
 
     // split height for locality
 
-    Mat src1 = src(Rect(0, 0, IMG_WIDTH, IMG_HEIGHT/2+1)).clone();
-    Mat src2 = src(Rect(0, IMG_HEIGHT/2-1, IMG_WIDTH, IMG_HEIGHT/2+1)).clone();
+    // Mat src1 = src(Rect(0, 0, IMG_WIDTH, IMG_HEIGHT/2+1)).clone();
+    // Mat src2 = src(Rect(0, IMG_HEIGHT/2-1, IMG_WIDTH, IMG_HEIGHT/2+1)).clone();
+    Mat src1 = src(Rect(0, 0, IMG_WIDTH, IMG_HEIGHT/2+1));
+    Mat src2 = src(Rect(0, IMG_HEIGHT/2-1, IMG_WIDTH, IMG_HEIGHT/2+1));
     Mat img_gray1 = img_gray(Rect(0, 0, IMG_WIDTH, IMG_HEIGHT/2+1));
     Mat img_gray2 = img_gray(Rect(0, IMG_HEIGHT/2-1, IMG_WIDTH, IMG_HEIGHT/2+1));
     Mat img_sobel1 = img_sobel(Rect(0, 0, IMG_WIDTH, IMG_HEIGHT/2+1));
@@ -147,10 +149,10 @@ void *runSobelMT(void *ptr)
     }
     pthread_barrier_wait(&endSobelConv);
 
-    if (myID == thread0_id) {
-      vconcat(img_sobel1, img_sobel2, img_sobel);
-    }
-    pthread_barrier_wait(&endSobelConv);
+    // if (myID == thread0_id) {
+    //   vconcat(img_sobel1, img_sobel2, img_sobel);
+    // }
+    // pthread_barrier_wait(&endSobelConv);
     pc_stop(&perf_counters);
 
     
