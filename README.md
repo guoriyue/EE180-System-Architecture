@@ -1,3 +1,4 @@
+Group: ee180-6z.stanford.edu
 Yifan Yang (yyang29@stanford.edu)
 Mingfei Guo (mfguo@stanford.edu)
 
@@ -18,9 +19,9 @@ We split the image ($HEIGHT*WIDTH = 480*640$) into two parts ($HEIGHT/2*WIDTH = 
 Because both threads can access the same memory of the image, we don't need to copy the image to two different memory locations or concat the two images together.
 To avoid race conditions when accessing global variables, we use `pthread_mutex_lock` and `pthread_mutex_unlock` to lock the global variables.
 Also, we use `pthread_barrier_wait` to help the two threads to synchronize:
-    1) Thread0 allocates the memory to hold grayscale and sobel images, and thread1 may wait for thread0 to finish the allocation. Then thread0 and thread1 can start to do the computation without repeating the allocation.
-    2) Thread0 and thread1 may wait for each other to finish the grayscale computation and the sobel convolution, so that the whole image is processed.
-    3) Thread0 and thread1 quit the program when reach the maximum number of frames or reveive the stop signal, especially to avoid one thread quitting while the other thread is still running.
+    1) Thread0 allocates the memory to hold grayscale and sobel images, and thread1 may wait for thread0 to finish the allocation. Then thread0 and thread1 can start to do the computation without repeating the allocation. After both of them pass pthread_barrier_wait(&thread0First), the memory is safely allocated and we can start to do the computation.
+    2) Thread0 and thread1 may wait for each other to finish the grayscale computation and the sobel convolution, so that the whole image is processed. We use pthread_barrier_wait(&endGrayConv) pthread_barrier_wait(&endSobelConv) to help them synchronize.
+    3) Thread0 and thread1 quit the program when reach the maximum number of frames or reveive the stop signal, especially to avoid one thread quitting while the other thread is still running. Here we only let thread0 catch the quit signal and use pthread_barrier_wait(&quitSobel) to help synchronize the two threads. If thread0 catches the quit signal, it will set the quit flag and let thread1 know that it should quit. No matter which thread waits for the other thread, both of them will quit when the quit flag is set.
 
 
 ### If you ran into any tough problems while implementing this assignment, describe them. If you solved it, document how or maybe what you learned. If you weren't able to solve the problem(s), describe what you tried / what you think is going wrong. For example, if you had a problem with your multithreaded implementation and tried to debug it, tell us how.
