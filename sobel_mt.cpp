@@ -143,9 +143,9 @@ void *runSobelMT(void *ptr)
 
     pc_start(&perf_counters);
     if (myID == thread0_id) {
-      sobelCalc(img_gray1, img_sobel1);
+      sobelCalc(img_gray1, img_sobel1, false);
     } else {
-      sobelCalc(img_gray2, img_sobel2);
+      sobelCalc(img_gray2, img_sobel2, true);
     }
     pthread_barrier_wait(&endSobelConv);
 

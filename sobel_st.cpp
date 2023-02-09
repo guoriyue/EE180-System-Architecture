@@ -86,7 +86,7 @@ void runSobelST()
 
     pc_start(&perf_counters);
     printf("Sobel calc start\n");
-    sobelCalc(img_gray, img_sobel);
+    sobelCalc(img_gray, img_sobel, false);
     printf("Sobel calc done\n");
     pc_stop(&perf_counters);
 

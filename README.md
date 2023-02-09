@@ -1,8 +1,8 @@
-Yifan Yang
+Yifan Yang (yyang29@stanford.edu)
 Mingfei Guo (mfguo@stanford.edu)
 
 ### What changes you made to the code as part of the assignment and how/why they sped up the code. If you did anything beyond what the assignment asked for to get extra speed, please explain it as well.
-(TODO, please check and update)
+
 1. SIMD. We use Neon intrinsics to do vectorized computation.
 This allows us to process 8 pixels at one time instead of processing one pixel at one time, which can reduce the number of instructions and improve the performance.
 Because we are dealing with a 8-bit image, we use 'uint8x8_t' to represent the pixels and to avoid overflow, we use 'uint16x8_t' during the computation.
@@ -16,7 +16,7 @@ If we have two threads, we can split the image into two parts and let each threa
 We use `pthread` to implement the multithreading.
 We split the image ($HEIGHT*WIDTH = 480*640$) into two parts ($HEIGHT/2*WIDTH = 240*640$) and let one thread process the first half of the image, and the other thread process the second half of the image.
 Because both threads can access the same memory of the image, we don't need to copy the image to two different memory locations or concat the two images together.
-To make sure that global variables are not modified by other threads, we use `pthread_mutex_lock` and `pthread_mutex_unlock` to lock the global variables.
+To avoid race conditions when accessing global variables, we use `pthread_mutex_lock` and `pthread_mutex_unlock` to lock the global variables.
 Also, we use `pthread_barrier_wait` to help the two threads to synchronize:
     1) Thread0 allocates the memory to hold grayscale and sobel images, and thread1 may wait for thread0 to finish the allocation. Then thread0 and thread1 can start to do the computation without repeating the allocation.
     2) Thread0 and thread1 may wait for each other to finish the grayscale computation and the sobel convolution, so that the whole image is processed.
@@ -35,9 +35,12 @@ In practice, we use IMG_HEIGHT/2+1 instead of IMG_HEIGHT/2 to guarantee that the
 2. Ignore the first/last row of the image to avoid segmentation fault.
 When iterating through the image and compuing the sobel convolution, we need to access the pixels in the neighborhood of the current pixel.
 To avoid accessing non-allocted memory, we need to ignore the first/last row of the image and use i in [1, img_gray.rows-1) and j in [1, img_gray.cols-7) instead.
-This is acceptable because bottom row/column of pixels aren't that visible.
+This is acceptable because bottom row/column of pixels aren't that visible. In multithreading case, we added a flag to indicate whether the current image input is the upper half or the lower half of the image, and we use this flag to decide the iteration boundary of i.
 
 3. Delete concat function and clone function.
-(TODO)
+Since the Mat class in OpenCV is reference based, and we clone these images in the calculation function, we don't need to clone it in the run function. Also, since the Mat class is reference based, we do not need to concat the two halves of image together.
 
 ### Justify your performance counting. In particular once you go to multithreaded, explain how performance is measured and explain how accurately it tracks your code's performance.
+Our implementation achieved a performance of around 75 fps on multithreading and 55 fps on single thread. This performance is over 10x increase compared to the baseline performance. We made the calculation function vectorizable and explicitly used compiler flags `-ftree-vectorize` and `-O3`, although `-ftree-no-vectorize` is implicit in `-O3`. This makes the compiled instructions vectorized and can perform SIMD improvements.
+
+For multithreading, the performance is measured in each step wrapping all the work related to each section(gray scale, sobel, etc) including synchronization operation to measure the true performance of 2 threads. 
