@@ -1,6 +1,8 @@
 Yifan Yang (yyang29@stanford.edu)
 Mingfei Guo (mfguo@stanford.edu)
 
+ee180-6z.stanford.edu
+
 ### What changes you made to the code as part of the assignment and how/why they sped up the code. If you did anything beyond what the assignment asked for to get extra speed, please explain it as well.
 
 1. SIMD. We use Neon intrinsics to do vectorized computation.
