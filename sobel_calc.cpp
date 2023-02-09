@@ -90,7 +90,7 @@ void sobelCalc(Mat& img_gray, Mat& img_sobel_out)
   printf("Sobel Calc img_gray rows & cols %d, %d\n", img_gray.rows, img_gray.cols);
   printf("Sobel Calc img_sobel_out rows & cols %d, %d\n", img_sobel_out.rows, img_sobel_out.cols);
   printf("Sobel Calc img_sobel_out rows & cols %d, %d\n", img_outx.rows, img_outx.cols);
-  for (int i=1; i<img_gray.rows; i++) {
+  for (int i=1; i<img_gray.rows-1; i++) {
     for (int j=1; j<img_gray.cols-7; j+=8) {      
       // printf("Convolution x start i j = %d, %d\n", i, j);
       // sobel = abs(img_gray.data[IMG_WIDTH*(i-1) + (j-1)] -
@@ -146,7 +146,7 @@ void sobelCalc(Mat& img_gray, Mat& img_sobel_out)
   printf("x done Sobel Calc img_sobel_out rows & cols %d, %d\n", img_sobel_out.rows, img_sobel_out.cols);
   printf("x done Sobel Calc img_sobel_out rows & cols %d, %d\n", img_outy.rows, img_outy.cols);
   // Calc the y convolution
-  for (int i=1; i<img_gray.rows; i++) {
+  for (int i=1; i<img_gray.rows-1; i++) {
     for (int j=1; j<img_gray.cols-7; j+=8) {
     // printf("Convolution y start i j = %d, %d\n", i, j);
     //  sobel = abs(img_gray.data[IMG_WIDTH*(i-1) + (j-1)] -
