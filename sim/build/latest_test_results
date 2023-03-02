@@ -64,6 +64,7 @@ or 1
 bgez-hazard 1
 nor-hazard 1
 addi 1
+sobel_asm 1
 lb-hazard 1
 srl-hazard 1
 xori 1
