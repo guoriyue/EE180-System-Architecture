@@ -1,0 +1,44 @@
+
+build/app:     file format elf32-bigmips
+
+
+Disassembly of section .text:
+
+00000000 <boot>:
+       0:	3c108002 	lui	s0,0x8002
+       4:	34110001 	li	s1,0x1
+       8:	3c080000 	lui	t0,0x0
+       c:	35083210 	ori	t0,t0,0x3210
+      10:	3c09de0f 	lui	t1,0xde0f
+      14:	3529beef 	ori	t1,t1,0xbeef
+      18:	3c0affff 	lui	t2,0xffff
+      1c:	354affde 	ori	t2,t2,0xffde
+      20:	340b000f 	li	t3,0xf
+      24:	3c0cffff 	lui	t4,0xffff
+      28:	358cffbe 	ori	t4,t4,0xffbe
+      2c:	3c0dffff 	lui	t5,0xffff
+      30:	35adffef 	ori	t5,t5,0xffef
+      34:	a10a0000 	sb	t2,0(t0)
+      38:	a10b0001 	sb	t3,1(t0)
+      3c:	a10c0002 	sb	t4,2(t0)
+      40:	a10d0003 	sb	t5,3(t0)
+      44:	81120000 	lb	s2,0(t0)
+      48:	81130001 	lb	s3,1(t0)
+      4c:	81140002 	lb	s4,2(t0)
+      50:	81150003 	lb	s5,3(t0)
+      54:	01521823 	subu	v1,t2,s2
+      58:	2c620001 	sltiu	v0,v1,1
+      5c:	01731823 	subu	v1,t3,s3
+      60:	2c630001 	sltiu	v1,v1,1
+      64:	00431024 	and	v0,v0,v1
+      68:	01941823 	subu	v1,t4,s4
+      6c:	2c630001 	sltiu	v1,v1,1
+      70:	00431024 	and	v0,v0,v1
+      74:	01b51823 	subu	v1,t5,s5
+      78:	2c630001 	sltiu	v1,v1,1
+      7c:	00431024 	and	v0,v0,v1
+      80:	ae020004 	sw	v0,4(s0)
+      84:	ae110000 	sw	s1,0(s0)
+      88:	08000022 	j	88 <boot+0x88>
+      8c:	00000000 	nop
+	...
