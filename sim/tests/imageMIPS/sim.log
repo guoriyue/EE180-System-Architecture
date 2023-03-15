@@ -1,0 +1,9 @@
+No instruction memory
+Input Data Buffer: tests/imageMIPS/ibuf.hex
+Output buffer: tests/imageMIPS/obuf_test.hex
+  Dumping range: 0x000000000 - 0x000019500
+Running userlogic for maximum of 1000000 cycles
+VCD info: dumpfile tests/imageMIPS/streamwave.vcd opened for output.
+Userlogic ran for 104962 cycles
+status register = 0x00000021
+test register   = 0x00000000

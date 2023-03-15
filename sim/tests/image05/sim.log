@@ -1,0 +1,11 @@
+No instruction memory
+Input Data Buffer: tests/image05/ibuf.hex
+Output buffer: tests/image05/obuf_test.hex
+  Dumping range: 0x000000000 - 0x000000024
+Running userlogic for maximum of 10000 cycles
+VCD info: dumpfile tests/image05/streamwave.vcd opened for output.
+WARNING: harness/userlogic_test.v:207: $readmemh(tests/image05/ibuf.hex): Not enough words in the file for the requested range [0:32767].
+WARNING: harness/userlogic_test.v:207: $readmemh(tests/image05/ibuf.hex): Not enough words in the file for the requested range [0:32767].
+Userlogic ran for 50 cycles
+status register = 0x00000021
+test register   = 0x00000000
