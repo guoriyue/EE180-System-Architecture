@@ -1,1 +1,33 @@
-TODO: Write your lab report here. See the handout for more information.
+Mingfei Guo mfguo@stanford.edu
+
+### Sobel Accelerator
+We simply add the values of the pixels, and clip the result to 0-255. To do this, we add two signed reg variables and three reg variables. The reg variables are used to store the values of the combination of pixel values (which may be negative). The three reg variables are used to store the values clipped to be greater than 0. Then we clip the values to be less than 255 and store them the final variables (convx, convy and sobel_sum).
+
+### Sobel Control
+We start in STATE_WAIT, and load it using three states STATE_LOADING1, STATE_LOADING2, and STATE_LOADING3 consecutively because we need 3x3 matrix to compute the sobel value. Then we iterate between STATE_PROCESSING_CALC and STATE_PROCESSING_LOADSS to go down the image.
+If we are at the forth last row, which means that in the next iteration, we will be at the third last row, we would go to STATE_PROCESSING_LOADSS_LAST and then STATE_PROCESSING_CALC_LAST.
+In STATE_PROCESSING_CALC_LAST, if we have compute all columns, we go to STATE_DONE, else, we go to STATE_LOADING1 and start from the beginning.
+
+For `SOBEL_SHIFT_OP_SHIFT_ROW, we shift in all load status.
+
+At the beginning, row_counter_next is zero. We keep row_counter consistent in STATE_LOADING1, STATE_LOADING2, and STATE_LOADING3. Only in STATE_PROCESSING_CALC, we increment row_counter by 1.
+This would be much simpler because we don't need to update row_counter in edge cases.
+Also, in STATE_PROCESSING_CALC_LAST, we update row_counter_next to be 0 because the next iteration will start at the top row.
+
+For column, in STATE_PROCESSING_CALC_LAST, we update col_strip_next to next_col_strip (which is assigned to be col_strip + `NUM_SOBEL_ACCELERATORS).
+In all other states, we do not update col_strip.
+
+For buf_read_offset, we need to know the read offset of the previous cycle to update the read offset for the next cycle, which is quite complicated.
+So we assign buf_read_offset_next to sctl2srt_read_addr in output generation, instead of buf_read_offset.
+Therefore, we pass the value between two cycles.
+Since for loading, we don't increment row_counter_next, so we can use (row_counter_next + n) * control_n_cols + col_strip to get the next offset.
+For STATE_LOADING_3, STATE_PROCESSING_LOADSS and STATE_PROCESSING_LOADSS_LAST, the next status will always be STATE_PROCESSING_CALC or STATE_PROCESSING_CALC_LAST, so the read offset is not important, we just set it to buf_read_offset.
+In STATE_PROCESSING_CALC, we continue to use +2 to get the next offset.
+For STATE_PROCESSING_CALC_LAST, we set the offset to (row_counter_next) * control_n_cols + col_strip because we may start from the beginning after this cycle.
+
+For buf_write_offset, we follow the same logic as buf_read_offset.
+For STATE_LOADING_3, STATE_PROCESSING_LOADSS and STATE_PROCESSING_LOADSS_LAST, we may need to write in the next cycle (STATE_PROCESSING_CALC and STATE_PROCESSING_CALC_LAST), we set the write offset to row_counter_next * buf_write_row_incr + col_strip.
+For others, we just set to buf_write_offset.
+
+For those need to write, we set buf_write_en to 1.
+Because this is immediately valid, we only set this in STATE_PROCESSING_CALC and STATE_PROCESSING_CALC_LAST (because we need to write in the this cycle).

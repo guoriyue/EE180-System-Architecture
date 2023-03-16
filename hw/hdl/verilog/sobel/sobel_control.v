@@ -529,7 +529,7 @@ always @ (*) begin
         
         STATE_LOADING_3: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_read_offset_next                = (row_counter_next) * control_n_cols + col_strip;
+            buf_read_offset_next                = buf_read_offset;
         end
         
         STATE_PROCESSING_CALC: begin
@@ -539,7 +539,7 @@ always @ (*) begin
         
         STATE_PROCESSING_LOADSS: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_read_offset_next                = (row_counter_next) * control_n_cols + col_strip;
+            buf_read_offset_next                = buf_read_offset;
         end
         
         STATE_PROCESSING_CALC_LAST: begin
@@ -549,7 +549,7 @@ always @ (*) begin
         
         STATE_PROCESSING_LOADSS_LAST: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_read_offset_next                = (row_counter) * control_n_cols + col_strip;
+            buf_read_offset_next                = buf_read_offset;
         end
         
         STATE_PROCESSING_DONE: begin
